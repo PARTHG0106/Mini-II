@@ -1,0 +1,219 @@
+<!-- Today's Schedule Popup -->
+<div class="schedule-widget" id="scheduleWidget">
+    <div class="schedule-widget-header">
+        <h3>Today's Schedule</h3>
+        <div class="widget-controls">
+            <button class="minimize-btn" onclick="toggleWidget()">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="schedule-widget-content">
+        <div class="today-exercises">
+            {% set today = now.weekday() %}
+            {% for schedule in schedules if schedule.day_of_week == today %}
+            <div class="exercise-item">
+                <div class="exercise-info">
+                    <span class="exercise-name">{{ schedule.exercise.name }}</span>
+                    <span class="exercise-details">{{ schedule.sets }} sets × {{ schedule.reps }} reps</span>
+                </div>
+                <div class="exercise-status">
+                    <label class="swap">
+                        <input type="checkbox" class="status-toggle" data-schedule-id="{{ schedule.id }}">
+                        <div class="swap-on">✓</div>
+                        <div class="swap-off">×</div>
+                    </label>
+                </div>
+            </div>
+            {% else %}
+            <div class="exercise-item">
+                <span class="exercise-name">No exercises scheduled for today</span>
+            </div>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('schedule') }}" class="view-full-schedule">View Full Schedule →</a>
+    </div>
+</div>
+
+<style>
+/* Floating Schedule Widget */
+.schedule-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.schedule-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #007bff;
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.schedule-widget-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.schedule-widget-content {
+    padding: 16px;
+}
+
+.exercise-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.exercise-item:last-child {
+    border-bottom: none;
+}
+
+.exercise-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.exercise-name {
+    font-weight: 500;
+}
+
+.exercise-details {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.exercise-status {
+    display: flex;
+    align-items: center;
+}
+
+.swap {
+    position: relative;
+    display: inline-grid;
+    cursor: pointer;
+    user-select: none;
+    place-content: center;
+    padding: 4px;
+}
+
+.swap input {
+    appearance: none;
+    position: absolute;
+    transform: scale(0);
+}
+
+.swap .swap-on,
+.swap .swap-off {
+    grid-area: 1/1;
+    transition: 0.2s;
+}
+
+.swap .swap-off {
+    z-index: 1;
+    opacity: 1;
+    color: #dc3545;
+}
+
+.swap .swap-on {
+    z-index: 0;
+    opacity: 0;
+    color: #28a745;
+}
+
+.swap input:checked ~ .swap-off {
+    opacity: 0;
+    z-index: 0;
+}
+
+.swap input:checked ~ .swap-on {
+    opacity: 1;
+    z-index: 1;
+}
+
+.view-full-schedule {
+    display: block;
+    text-align: right;
+    margin-top: 12px;
+    color: #007bff;
+    text-decoration: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggles = document.querySelectorAll('.status-toggle');
+    
+    // Function to fetch initial status for each toggle
+    const fetchInitialStatus = async (toggle) => {
+        const scheduleId = toggle.dataset.scheduleId;
+        try {
+            const response = await fetch(`/get_schedule_status/${scheduleId}`);
+            const data = await response.json();
+            if (data.success) {
+                toggle.checked = data.is_completed;
+            }
+        } catch (error) {
+            console.error('Error fetching status:', error);
+        }
+    };
+    
+    // Fetch initial status for all toggles
+    toggles.forEach(toggle => {
+        fetchInitialStatus(toggle);
+        
+        toggle.addEventListener('change', function() {
+            const scheduleId = this.dataset.scheduleId;
+            const isCompleted = this.checked;
+            
+            fetch(`/update_schedule_status/${scheduleId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_completed: isCompleted
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert the toggle if the update failed
+                    this.checked = !isCompleted;
+                    console.error('Failed to update status:', data.message);
+                }
+            })
+            .catch(error => {
+                // Revert the toggle if there was an error
+                this.checked = !isCompleted;
+                console.error('Error updating status:', error);
+            });
+        });
+    });
+});
+
+function toggleWidget() {
+    const widget = document.getElementById('scheduleWidget');
+    const minimizeBtn = widget.querySelector('.minimize-btn i');
+    
+    if (widget.classList.contains('minimized')) {
+        widget.classList.remove('minimized');
+        minimizeBtn.classList.remove('fa-plus');
+        minimizeBtn.classList.add('fa-minus');
+    } else {
+        widget.classList.add('minimized');
+        minimizeBtn.classList.remove('fa-minus');
+        minimizeBtn.classList.add('fa-plus');
+    }
+}
+</script> 

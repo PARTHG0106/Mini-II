@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to FitMe{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-base-200">
+    <div class="max-w-4xl w-full p-4">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4 gradient-text">Welcome to FitMe</h1>
+            <p class="text-lg text-base-content/70">Your personal fitness tracking companion</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Login Form -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title text-2xl mb-4">Login</h2>
+                    <form method="POST" class="space-y-4">
+                        {{ login_form.csrf_token }}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Username</span>
+                            </label>
+                            {{ login_form.username(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Password</span>
+                            </label>
+                            {{ login_form.password(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control mt-6">
+                            {{ login_form.submit(class="btn btn-primary w-full") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Registration Form -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title text-2xl mb-4">Register</h2>
+                    <form method="POST" class="space-y-4">
+                        {{ registration_form.csrf_token }}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Username</span>
+                            </label>
+                            {{ registration_form.username(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Email</span>
+                            </label>
+                            {{ registration_form.email(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Password</span>
+                            </label>
+                            {{ registration_form.password(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Confirm Password</span>
+                            </label>
+                            {{ registration_form.password2(class="input input-bordered w-full") }}
+                        </div>
+                        <div class="form-control mt-6">
+                            <button type="submit" name="register" class="btn btn-primary w-full">Register</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        
+    </div>
+</div>
+{% endblock %}

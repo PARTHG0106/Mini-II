@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="title">Fit Me</h1>
+        <p class="subtitle">Your Personal AI-Powered Exercise Form Coach</p>
+        <a href="{{ url_for('login') }}" class="button pulse">Get Started</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="features">
+        <div class="feature-box">
+            <h3>Real-Time Form Analysis</h3>
+            <p>Get instant feedback on your exercise form using advanced AI technology. Our system analyzes your movements in real-time to ensure you're performing exercises correctly and safely.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Personalized Guidance</h3>
+            <p>Receive customized tips and corrections based on your performance. Our AI adapts to your skill level and provides appropriate guidance for improvement.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Progress Tracking</h3>
+            <p>Monitor your improvement over time with detailed analytics and progress reports. Track your form quality, consistency, and overall performance.</p>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature-box">
+            <h3>Multiple Exercises</h3>
+            <p>Access a wide variety of exercises including squats, bicep curls, shoulder presses, push-ups, and crunches. Each exercise comes with detailed instructions and form guidance.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Safety First</h3>
+            <p>Our AI system helps prevent injuries by ensuring proper form and technique. Get alerts when your form needs correction to maintain safe exercise practices.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Convenient & Accessible</h3>
+            <p>Work out from the comfort of your home with just your camera. No expensive equipment needed for most exercises. Perfect for both beginners and experienced fitness enthusiasts.</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

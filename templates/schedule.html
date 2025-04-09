@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule - FitMe{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4 gradient-text">Workout Schedule</h1>
+            <p class="text-lg text-base-content/70">Plan and track your weekly workouts</p>
+        </div>
+
+        <!-- Add Exercise Form -->
+        <div class="card bg-base-100 shadow-xl mb-8">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">Add Exercise to Schedule</h2>
+                <form action="{{ url_for('add_schedule') }}" method="POST" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Exercise</span>
+                            </label>
+                            <select name="exercise_id" class="select select-bordered w-full" required>
+                                <option value="" disabled selected>Select Exercise</option>
+                                {% for exercise in exercises %}
+                                <option value="{{ exercise.id }}">{{ exercise.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Day</span>
+                            </label>
+                            <select name="day_of_week" class="select select-bordered w-full" required>
+                                <option value="" disabled selected>Select Day</option>
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Sets</span>
+                            </label>
+                            <input type="number" name="sets" class="input input-bordered w-full" min="1" required>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Reps</span>
+                            </label>
+                            <input type="number" name="reps" class="input input-bordered w-full" min="1" required>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <button type="submit" class="btn btn-primary">Add Exercise</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Weekly Schedule -->
+        {% for day in range(7) %}
+        <div class="card bg-base-100 shadow-xl mb-4">
+            <div class="card-body">
+                <h2 class="card-title text-xl mb-4">
+                    {{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][day] }}
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Exercise</th>
+                                <th>Sets</th>
+                                <th>Reps</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in schedules if schedule.day_of_week == day %}
+                            <tr>
+                                <td>{{ schedule.exercise.name }}</td>
+                                <td>{{ schedule.sets }}</td>
+                                <td>{{ schedule.reps }}</td>
+                                <td>
+                                    <label class="swap">
+                                        <input type="checkbox" class="status-toggle" data-schedule-id="{{ schedule.id }}">
+                                        <div class="swap-on">✓</div>
+                                        <div class="swap-off">×</div>
+                                    </label>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('delete_schedule', schedule_id=schedule.id) }}" method="POST" class="inline">
+                                        <button type="submit" class="btn btn-error btn-sm">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No exercises scheduled</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.swap {
+    position: relative;
+    display: inline-grid;
+    cursor: pointer;
+    user-select: none;
+    place-content: center;
+    padding: 4px;
+}
+
+.swap input {
+    appearance: none;
+    position: absolute;
+    transform: scale(0);
+}
+
+.swap .swap-on,
+.swap .swap-off {
+    grid-area: 1/1;
+    transition: 0.2s;
+}
+
+.swap .swap-off {
+    z-index: 1;
+    opacity: 1;
+    color: #dc3545;
+}
+
+.swap .swap-on {
+    z-index: 0;
+    opacity: 0;
+    color: #28a745;
+}
+
+.swap input:checked ~ .swap-off {
+    opacity: 0;
+    z-index: 0;
+}
+
+.swap input:checked ~ .swap-on {
+    opacity: 1;
+    z-index: 1;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggles = document.querySelectorAll('.status-toggle');
+    
+    // Function to fetch initial status for each toggle
+    const fetchInitialStatus = async (toggle) => {
+        const scheduleId = toggle.dataset.scheduleId;
+        try {
+            const response = await fetch(`/get_schedule_status/${scheduleId}`);
+            const data = await response.json();
+            if (data.success) {
+                toggle.checked = data.is_completed;
+            }
+        } catch (error) {
+            console.error('Error fetching status:', error);
+        }
+    };
+    
+    // Fetch initial status for all toggles
+    toggles.forEach(toggle => {
+        fetchInitialStatus(toggle);
+        
+        toggle.addEventListener('change', function() {
+            const scheduleId = this.dataset.scheduleId;
+            const isCompleted = this.checked;
+            
+            fetch(`/update_schedule_status/${scheduleId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_completed: isCompleted
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert the toggle if the update failed
+                    this.checked = !isCompleted;
+                    console.error('Failed to update status:', data.message);
+                }
+            })
+            .catch(error => {
+                // Revert the toggle if there was an error
+                this.checked = !isCompleted;
+                console.error('Error updating status:', error);
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 
