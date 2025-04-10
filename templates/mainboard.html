@@ -51,39 +51,40 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <!-- Start Workout Card -->
-        <div class="card animation_class bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-2xl mb-4">
-                    <i class="fas fa-play-circle text-primary mr-2"></i>
-                    Start Workout
-                </h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <a href="{{ url_for('start', exercise='shoulder_press') }}" class="btn btn-primary">
-                        <i class="fas fa-dumbbell mr-2"></i>
-                        Shoulder Press
-                    </a>
-                    <a href="{{ url_for('start', exercise='dumbbell_curls') }}" class="btn btn-primary">
-                        <i class="fas fa-dumbbell mr-2"></i>
-                        Bicep Curls
-                    </a>
-                    <a href="{{ url_for('start', exercise='barbell_squats') }}" class="btn btn-primary">
-                        <i class="fas fa-dumbbell mr-2"></i>
-                        Squats
-                    </a>
-                    <a href="{{ url_for('start', exercise='deadlift') }}" class="btn btn-primary">
-                        <i class="fas fa-dumbbell mr-2"></i>
-                        Deadlift
-                    </a>
-                </div>
+    <div class="card animation_class bg-base-100 shadow-xl w-full md:w-3/4 mx-auto">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4 text-center mx-auto">
+                Start Workout
+            </h2>
+            <div class="grid grid-cols-2 gap-4">
+                <a href="{{ url_for('start', exercise='shoulder_press') }}" class=" btn_start btn btn-primary flex flex-col items-center justify-center p-4">
+                    <img src="https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Shoulder-Press.gif" 
+                         alt="Shoulder Press" 
+                         class="h-20 w-20 object-contain mb-2">
+                    <span class="text-sm">Shoulder Press</span>
+                </a>
+                <a href="{{ url_for('start', exercise='dumbbell_curls') }}" class=" btn_start btn btn-primary flex flex-col items-center justify-center p-4">
+                    <img src="https://www.inspireusafoundation.org/wp-content/uploads/2023/01/inner-bicep-curl.gif" 
+                         alt="Bicep Curls" 
+                         class="h-20 w-20 object-contain mb-2">
+                    <span class="text-sm">Bicep Curls</span>
+                </a>
+                <a href="{{ url_for('start', exercise='barbell_squats') }}" class=" btn_start btn btn-primary flex flex-col items-center justify-center p-4">
+                    <img src="https://www.inspireusafoundation.org/wp-content/uploads/2022/03/barbell-full-squat.gif" 
+                         alt="Squats" 
+                         class="h-20 w-20 object-contain mb-2">
+                    <span class="text-sm">Squats</span>
+                </a>
+                <a href="{{ url_for('start', exercise='deadlift') }}" class=" btn_start btn btn-primary flex flex-col items-center justify-center p-4">
+                    <img src="https://www.fitstream.com/images/weight-training/exercises/deadlift-one.png" 
+                         alt="Deadlift" 
+                         class="h-20 w-20 object-contain mb-2">
+                    <span class="text-sm">Deadlift</span>
+                </a>
             </div>
         </div>
-
-        <!-- Recommendations Card -->
-       
     </div>
+
 
     <!-- Progress Overview -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
