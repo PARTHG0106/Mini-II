@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from config import Config
 from models import User, db, bcrypt, Exercises, UserExercise, ExerciseUpload, WorkoutSchedule, ScheduleCompletion
 from shoulder_press import gen_frames as gen_frames_shoulder_press, analyze_shoulder_press_video
-from bicep_curls import gen_frames as gen_frames_bicep_curls, analyze_bicep_curl_video
+from bicep_curls import gen_frames as gen_frames_bicep_curls, analyze_bicep_curls_video
 from barbell_squats import gen_frames as gen_frames_barbell_squats, analyze_squat_video
 from deadlift import gen_frames as gen_frames_deadlift, analyze_deadlift_video
 from lateral_raises import gen_frames as gen_frames_lateral_raises, analyze_lateral_raise_video
@@ -21,6 +21,7 @@ from werkzeug.utils import secure_filename
 import cv2
 import numpy as np
 import mediapipe as mp
+import time
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -667,24 +668,35 @@ def logout():
 @login_required
 def upload_exercise():
     if request.method == 'POST':
-        # Get form data
+        if 'video' not in request.files:
+            flash('No video file part', 'error')
+            return redirect(request.url)
+        
+        video_file = request.files['video']
+        if video_file.filename == '':
+            flash('No selected video file', 'error')
+            return redirect(request.url)
+        
+        if not allowed_file(video_file.filename):
+            flash('Invalid file format. Supported formats: mp4, mov, avi', 'error')
+            return redirect(request.url)
+        
         exercise_type = request.form.get('exercise_type')
-        video = request.files.get('video')
         notes = request.form.get('notes', '')
         
-        if not video or not exercise_type:
-            flash('Please select both an exercise type and upload a video', 'error')
-            return redirect(url_for('upload_exercise'))
-            
         # Save uploaded video
-        video_filename = secure_filename(video.filename)
+        video_filename = f"{exercise_type}_{int(time.time())}.mp4"
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
-        video.save(video_path)
         
-        # Analyze video based on exercise type
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(video_path), exist_ok=True)
+        
+        video_file.save(video_path)
+        
+        # Analyze the video based on exercise type
         analysis_result = None
         if exercise_type == 'bicep_curl':
-            analysis_result = analyze_bicep_curl_video(video_path)
+            analysis_result = analyze_bicep_curls_video(video_path)
         elif exercise_type == 'squat':
             analysis_result = analyze_squat_video(video_path)
         elif exercise_type == 'shoulder_press':
@@ -698,12 +710,8 @@ def upload_exercise():
             flash('Error analyzing video: ' + analysis_result.get('error', 'Unknown error'), 'error')
             return redirect(url_for('upload_exercise'))
             
-        # Save analyzed video
-        analyzed_filename = f"analyzed_{video_filename}"
-        analyzed_path = os.path.join(app.config['UPLOAD_FOLDER'], analyzed_filename)
-        
-        # Process the video to add feedback overlay
-        add_feedback_overlay(video_path, analyzed_path, exercise_type)
+        # Get the analyzed video path from the result
+        analyzed_filename = analysis_result.get('video_path', f"analyzed_{video_filename}")
             
         # Save exercise data
         exercise = ExerciseUpload(
@@ -722,89 +730,6 @@ def upload_exercise():
     # Get user's analyzed videos
     analyzed_videos = ExerciseUpload.query.filter_by(user_id=session['user_id']).order_by(ExerciseUpload.created_at.desc()).all()
     return render_template('upload_exercise.html', analyzed_videos=analyzed_videos)
-
-def add_feedback_overlay(input_path, output_path, exercise_type):
-    """Add feedback overlay to the video"""
-    try:
-        # Open the video
-        cap = cv2.VideoCapture(input_path)
-        if not cap.isOpened():
-            raise Exception("Could not open video file")
-        
-        # Get video properties
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        # Create video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
-        # Initialize MediaPipe Pose
-        mp_pose = mp.solutions.pose
-        mp_drawing = mp.solutions.drawing_utils
-        
-        with mp_pose.Pose(
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        ) as pose:
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                # Convert the frame to RGB
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_rgb.flags.writeable = False
-                
-                # Process the frame
-                results = pose.process(frame_rgb)
-                
-                # Convert back to BGR for drawing
-                frame_rgb.flags.writeable = True
-                frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
-                
-                # Draw pose landmarks
-                if results.pose_landmarks:
-                    mp_drawing.draw_landmarks(
-                        frame,
-                        results.pose_landmarks,
-                        mp_pose.POSE_CONNECTIONS
-                    )
-                
-                # Add feedback text
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 0.7
-                thickness = 2
-                color = (0, 255, 0)  # Green color
-                
-                # Add exercise-specific feedback
-                if exercise_type == 'squat':
-                    text = "Keep knees aligned with toes"
-                elif exercise_type == 'bicep_curl':
-                    text = "Keep elbows close to body"
-                elif exercise_type == 'shoulder_press':
-                    text = "Keep core engaged"
-                elif exercise_type == 'deadlift':
-                    text = "Maintain neutral spine"
-                elif exercise_type == 'lateral_raise':
-                    text = "Keep shoulders level"
-                
-                # Add text to frame
-                cv2.putText(frame, text, (10, 30), font, font_scale, color, thickness)
-                
-                # Write the frame
-                out.write(frame)
-        
-        # Release resources
-        cap.release()
-        out.release()
-        
-    except Exception as e:
-        print(f"Error processing video: {str(e)}")
-        # If there's an error, just copy the original file
-        import shutil
-        shutil.copy(input_path, output_path)
 
 @app.route('/delete-analyzed-video/<int:upload_id>', methods=['POST'])
 @login_required
@@ -962,16 +887,31 @@ def download_analyzed_video(upload_id):
         return redirect(url_for('upload_exercise'))
     
     try:
+        # Full path to the video file
         video_path = os.path.join(app.config['UPLOAD_FOLDER'], upload.video_path)
+        
+        # Check if file exists
         if not os.path.exists(video_path):
             flash('Video file not found', 'error')
             return redirect(url_for('upload_exercise'))
         
-        return send_file(
+        # Check if download parameter is provided
+        download = request.args.get('download', 'false') == 'true'
+        
+        # Determine file size
+        file_size = os.path.getsize(video_path)
+        
+        response = send_file(
             video_path,
             mimetype='video/mp4',
-            as_attachment=False
+            as_attachment=download,
+            download_name=f"{upload.exercise_type}_analyzed.mp4" if download else None
         )
+        
+        # Add Content-Length header
+        response.headers['Content-Length'] = file_size
+        
+        return response
     except Exception as e:
         print(f"Error serving video: {str(e)}")
         flash('Error serving video', 'error')
